@@ -1,0 +1,22 @@
+[
+  {"question": "Quels sont les principaux symptômes du diabète de type 2 ?", "expected_doc": "diabete-de-type-2"},
+  {"question": "Comment traite-t-on l'hypertension artérielle ?", "expected_doc": "hypertension-arterielle"},
+  {"question": "Qu'est-ce qui déclenche une crise d'asthme ?", "expected_doc": "asthme"},
+  {"question": "Combien de temps dure une grippe saisonnière ?", "expected_doc": "grippe"},
+  {"question": "Quelles sont les causes de la migraine ?", "expected_doc": "migraine"},
+  {"question": "Comment diagnostique-t-on une anémie ?", "expected_doc": "anemie"},
+  {"question": "Quels sont les facteurs de risque de l'ostéoporose ?", "expected_doc": "osteoporose"},
+  {"question": "Quels sont les signes d'une hypothyroïdie ?", "expected_doc": "hypothyroidie"},
+  {"question": "Comment évolue la maladie d'Alzheimer ?", "expected_doc": "maladie-d-alzheimer"},
+  {"question": "Quels sont les symptômes moteurs de la maladie de Parkinson ?", "expected_doc": "maladie-de-parkinson"},
+  {"question": "Qu'est-ce que l'insuffisance cardiaque ?", "expected_doc": "insuffisance-cardiaque"},
+  {"question": "Quel est le lien entre le tabac et la BPCO ?", "expected_doc": "bronchopneumopathie-chronique-obstructive"},
+  {"question": "Le zona est-il contagieux ?", "expected_doc": "zona"},
+  {"question": "Comment attrape-t-on la mononucléose infectieuse ?", "expected_doc": "mononucleose-infectieuse"},
+  {"question": "Comment soulager l'eczéma atopique chez l'enfant ?", "expected_doc": "dermatite-atopique"},
+  {"question": "Quels sont les signes d'une appendicite aiguë ?", "expected_doc": "appendicite"},
+  {"question": "Quels sont les premiers symptômes de la sclérose en plaques ?", "expected_doc": "sclerose-en-plaques"},
+  {"question": "Quelles articulations sont touchées par la polyarthrite rhumatoïde ?", "expected_doc": "polyarthrite-rhumatoide"},
+  {"question": "Que faire face à une crise d'épilepsie ?", "expected_doc": "epilepsie"},
+  {"question": "Quelle est la différence entre pneumonie virale et bactérienne ?", "expected_doc": "pneumonie"}
+]
