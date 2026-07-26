@@ -1,4 +1,4 @@
-# RAG Medical — Retrieval-Augmented Generation with rigorous evaluation
+# RAG Medical: Retrieval-Augmented Generation with rigorous evaluation
 
 A French-language medical document-retrieval and question-answering pipeline (RAG), built around what most RAG demos skip: **a measurable evaluation harness**.
 
@@ -16,9 +16,9 @@ Retrieval is evaluated on 20 questions with known ground-truth documents (determ
 
 Generation is evaluated on three axes when an Ollama server is available (`--with-generation`):
 
-- **citation validity** — every `[n]` cited by the model maps to a real retrieved source
-- **citation coverage** — the answer actually cites its sources
-- **groundedness** — an LLM-as-judge checks the answer against the cited chunks (hallucination detection)
+- **citation validity**: every `[n]` cited by the model maps to a real retrieved source
+- **citation coverage**: the answer actually cites its sources
+- **groundedness**: an LLM-as-judge checks the answer against the cited chunks (hallucination detection)
 
 ## Pipeline
 
@@ -43,10 +43,10 @@ python -m src.evaluate --k 5 --with-generation
 
 ## Design notes
 
-- **BM25 over embeddings, deliberately** — on a small specialized corpus, lexical retrieval is a strong, fully reproducible baseline; the evaluation harness makes it easy to plug in embeddings and *prove* whether they help, rather than assume it.
-- **Citations are a contract** — the prompt forces `[n]` citations, `extract_citations` parses them, and evaluation fails answers whose citations don't exist. Refusal is instructed when sources don't contain the answer.
-- **Everything measurable is tested** — 11 pytest cases on chunking, tokenization, indexing, ranking, metrics and the citation parser; CI runs lint + tests on every push.
+- **BM25 over embeddings, deliberately.** On a small specialized corpus, lexical retrieval is a strong, fully reproducible baseline; the evaluation harness makes it easy to plug in embeddings and *prove* whether they help, rather than assume it.
+- **Citations are a contract.** The prompt forces `[n]` citations, `extract_citations` parses them, and evaluation fails answers whose citations don't exist. Refusal is instructed when sources don't contain the answer.
+- **Everything measurable is tested.** 11 pytest cases on chunking, tokenization, indexing, ranking, metrics and the citation parser; CI runs lint + tests on every push.
 
 ## Disclaimer
 
-Educational project — not medical advice. Answers reflect the corpus, not clinical guidance.
+Educational project, not medical advice. Answers reflect the corpus, not clinical guidance.

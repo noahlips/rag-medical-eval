@@ -116,7 +116,7 @@ def main() -> None:
 
     if args.with_generation:
         if not ollama_available():
-            print("Ollama unreachable — skipping generation evaluation.")
+            print("Ollama unreachable, skipping generation evaluation.")
         else:
             report["generation"] = evaluate_generation(index, eval_set)
             g = report["generation"]
