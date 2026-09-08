@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 from src.chunking import chunk_text, split_paragraphs
 
 
@@ -16,7 +18,7 @@ def test_chunks_respect_max_chars():
 def test_chunks_overlap():
     text = "\n\n".join(f"Paragraphe numéro {i} " + "y" * 400 for i in range(6))
     chunks = chunk_text(text, doc_id="doc", max_chars=900, overlap_paragraphs=1)
-    for previous, current in zip(chunks, chunks[1:]):
+    for previous, current in pairwise(chunks):
         last_paragraph = previous.text.split("\n\n")[-1]
         assert last_paragraph in current.text
 
