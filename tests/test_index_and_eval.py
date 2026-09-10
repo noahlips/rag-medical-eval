@@ -1,9 +1,9 @@
 import pytest
 
 from src.chunking import Chunk
-from src.evaluate import evaluate_retrieval
+from src.evaluate import evaluate_retrieval, split_eval_set
 from src.index import BM25Index, tokenize
-from src.rag import extract_citations, format_sources
+from src.rag import extract_citations, format_sources, is_abstention
 
 CHUNKS = [
     Chunk("diabete", 0, "Le diabète de type 2 se caractérise par une glycémie élevée et une résistance à l'insuline."),
@@ -50,6 +50,48 @@ def test_evaluate_retrieval_miss_scores_zero(index):
     report = evaluate_retrieval(index, eval_set, k=2)
     assert report["hit@2"] == 0.0
     assert report["mrr"] == 0.0
+
+
+def test_unanswerable_questions_are_excluded_from_retrieval_metrics(index):
+    """A question with no answer in the corpus must not be counted as a miss."""
+    eval_set = [
+        {"question": "glycémie et insuline", "expected_doc": "diabete", "type": "definition"},
+        {"question": "symptômes de la maladie de Crohn", "expected_doc": None, "type": "hors_corpus"},
+    ]
+    report = evaluate_retrieval(index, eval_set, k=2)
+    assert report["n_questions"] == 1
+    assert report["n_excluded_unanswerable"] == 1
+    assert report["hit@2"] == 1.0
+    assert report["mrr"] == 1.0
+
+
+def test_retrieval_breaks_metrics_down_by_type(index):
+    eval_set = [
+        {"question": "glycémie et insuline", "expected_doc": "diabete", "type": "definition"},
+        {"question": "inflammation des bronches", "expected_doc": "asthme", "type": "definition"},
+        {"question": "fracture du fémur", "expected_doc": "grippe", "type": "langage_courant"},
+    ]
+    report = evaluate_retrieval(index, eval_set, k=2)
+    assert report["by_type"]["definition"] == {"n": 2, "hit@2": 1.0, "mrr": 1.0}
+    assert report["by_type"]["langage_courant"]["n"] == 1
+    assert report["details"][0]["type"] == "definition"
+
+
+def test_split_eval_set_separates_null_expected_doc():
+    eval_set = [
+        {"question": "a", "expected_doc": "diabete"},
+        {"question": "b", "expected_doc": None},
+        {"question": "c"},
+    ]
+    answerable, unanswerable = split_eval_set(eval_set)
+    assert [item["question"] for item in answerable] == ["a"]
+    assert [item["question"] for item in unanswerable] == ["b", "c"]
+
+
+def test_is_abstention_detects_refusal_not_answer():
+    assert is_abstention("Les sources fournies ne permettent pas de répondre à cette question.")
+    assert is_abstention("Cette information n'est pas mentionnée dans les extraits.")
+    assert not is_abstention("Le diabète de type 2 se traite par la metformine [1].")
 
 
 def test_extract_citations_dedupes_and_orders():

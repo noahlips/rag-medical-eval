@@ -48,6 +48,37 @@ def extract_citations(answer: str) -> list[int]:
     return seen
 
 
+# Formulations par lesquelles le modèle signale que les sources ne suffisent pas.
+# Le prompt lui demande explicitement de le dire, ces marqueurs servent à le vérifier.
+ABSTENTION_MARKERS = (
+    "ne permettent pas",
+    "ne permet pas",
+    "ne contiennent pas",
+    "ne contient pas",
+    "ne figure pas",
+    "ne figurent pas",
+    "n'est pas mentionn",
+    "ne sont pas mentionn",
+    "aucune information",
+    "pas d'information",
+    "pas assez d'information",
+    "pas suffisamment d'information",
+    "je ne sais pas",
+    "je ne peux pas répondre",
+)
+
+
+def is_abstention(answer: str) -> bool:
+    """True if the answer states that the sources do not allow answering.
+
+    Used to score the questions whose answer is deliberately absent from the
+    corpus: there, abstaining is the correct behaviour and answering anyway
+    is a hallucination.
+    """
+    lowered = answer.lower()
+    return any(marker in lowered for marker in ABSTENTION_MARKERS)
+
+
 def generate(prompt: str, model: str = DEFAULT_MODEL, base_url: str = OLLAMA_URL) -> str:
     response = requests.post(
         f"{base_url}/api/generate",
