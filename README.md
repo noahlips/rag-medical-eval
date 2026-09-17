@@ -58,13 +58,33 @@ The third one is the weakest. An LLM judge has its own biases and I have not val
 
 The fourth is the one most demos never measure. Retrieval always returns its top-k chunks, including for a question about Crohn's disease in a corpus that contains nothing about it. What matters then is whether the model uses those irrelevant chunks anyway. Answering under those conditions is a hallucination, and abstaining is the correct behaviour.
 
-## Why BM25 and not embeddings
+## BM25 vs embeddings
 
-This is the choice people will question, and it is deliberate. On a corpus this small and this specialised, lexical search is a strong baseline, fully reproducible, with no model dependency.
+I started with BM25 on purpose. On a small, specialised corpus lexical search is a strong baseline, fully reproducible, with no model to download. And building the evaluation first meant embeddings could be measured instead of assumed to be better.
 
-More importantly, having the evaluation harness first means embeddings can be plugged in and *measured* rather than assumed to be better. That is the opposite of the usual order, where you reach for embeddings and never check.
+The breakdown above made the test precise: an embedding model should lift `langage_courant` without breaking the other four categories. So I plugged in `paraphrase-multilingual-MiniLM-L12-v2` behind the same interface and ran the same 100 questions:
 
-The breakdown above now says precisely what an embedding model would have to improve: `langage_courant` at 0.60, without regressing the four categories currently at 1.00. That is a testable claim rather than a preference, and it is the next step on this repo.
+```
+                    BM25               embeddings
+                    hit@5   MRR        hit@5   MRR
+overall             0.92    0.880      0.90    0.849
+
+definition          1.00    1.000      1.00    0.950
+mecanisme           1.00    1.000      1.00    1.000
+detail              1.00    1.000      0.85    0.817
+prise_en_charge     1.00    0.950      1.00    1.000
+langage_courant     0.60    0.452      0.65    0.477
+```
+
+Embeddings did not win. They did roughly what you would predict, just less cleanly than the usual story goes.
+
+On patient-style questions they recover four that BM25 misses, like "je siffle en respirant et j'ai la poitrine serrée" for asthma, or "mon père a la main qui tremble quand il ne fait rien" for Parkinson's. No word overlap, but the meaning is close enough. They also lose three that BM25 had found, which leaves a net gain of one question.
+
+The real cost is on `detail`. Questions built around a rare term, "syndrome de Widal", "carnet glycémique électronique", "Shingrix", are found at rank 1 by BM25 and not at all by the embedding model. Exact rare words are what lexical search is best at, and a small sentence model tends to blur them into their general topic. There is probably a second cause: this model reads at most 128 tokens, while a chunk can reach 1200 characters, so a fact near the end of a chunk is simply not in its embedding.
+
+The most useful number is not in the table. Between them, the two retrievers find the right document for 96 questions out of 100, against 92 and 90 separately. They fail on different questions, which is the argument for a hybrid retriever that merges both rankings. That is the next step, and the harness will say whether it actually gets close to 96.
+
+These gaps are one to three questions per category of twenty, so none of them is statistically solid on its own. The pattern across categories is what I would trust, not any single figure.
 
 ## Running it
 
@@ -73,6 +93,14 @@ pip install -r requirements.txt
 python -m src.corpus          # download the articles
 python -m src.index           # build the BM25 index
 python -m src.evaluate --k 5  # retrieval metrics, no LLM needed
+```
+
+To compare with the embedding retriever (pulls in PyTorch and a ~470 MB model):
+
+```bash
+pip install -r requirements-embeddings.txt
+python -m src.embeddings
+python -m src.evaluate --k 5 --retriever embeddings
 ```
 
 With Ollama running (`ollama pull llama3.2`):

@@ -27,8 +27,11 @@ Two levels:
      supported by the cited chunks
    - abstention : on out-of-corpus questions, the model declined to answer
 
+The retriever is interchangeable: BM25 (lexical) or a multilingual sentence
+embedding model (dense). Both expose the same search/save/load interface.
+
 Usage:
-    python -m src.evaluate [--k 5] [--with-generation]
+    python -m src.evaluate [--k 5] [--retriever bm25|embeddings] [--with-generation]
 """
 
 import argparse
@@ -39,12 +42,16 @@ from pathlib import Path
 
 import requests
 
+from src.embeddings import EmbeddingIndex
 from src.index import BM25Index
 from src.rag import OLLAMA_URL, answer_question, generate, is_abstention
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 EVAL_FILE = BASE_DIR / "data" / "eval" / "questions.json"
 RESULTS_DIR = BASE_DIR / "results"
+
+RETRIEVERS = {"bm25": BM25Index, "embeddings": EmbeddingIndex}
+Retriever = BM25Index | EmbeddingIndex
 
 JUDGE_PROMPT = """Voici des extraits de documents et une réponse générée. La réponse est-elle \
 entièrement soutenue par les extraits (aucune information inventée) ? Réponds uniquement par \
@@ -83,7 +90,7 @@ def _aggregate(ranks: list[int | None]) -> dict:
     return {"n": n, "hit": round(hits / n, 4), "mrr": round(reciprocal / n, 4)}
 
 
-def evaluate_retrieval(index: BM25Index, eval_set: list[dict], k: int = 5) -> dict:
+def evaluate_retrieval(index: Retriever, eval_set: list[dict], k: int = 5) -> dict:
     answerable, unanswerable = split_eval_set(eval_set)
 
     details: list[dict] = []
@@ -127,7 +134,7 @@ def evaluate_retrieval(index: BM25Index, eval_set: list[dict], k: int = 5) -> di
     }
 
 
-def evaluate_generation(index: BM25Index, eval_set: list[dict], k: int = 4) -> dict:
+def evaluate_generation(index: Retriever, eval_set: list[dict], k: int = 4) -> dict:
     answerable, unanswerable = split_eval_set(eval_set)
 
     n_valid, n_cited, n_grounded, answers = 0, 0, 0, []
@@ -172,18 +179,23 @@ def evaluate_generation(index: BM25Index, eval_set: list[dict], k: int = 4) -> d
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--k", type=int, default=5)
+    parser.add_argument("--retriever", choices=sorted(RETRIEVERS), default="bm25")
     parser.add_argument("--with-generation", action="store_true")
     args = parser.parse_args()
 
-    index = BM25Index.load()
+    index = RETRIEVERS[args.retriever].load()
     eval_set = json.loads(EVAL_FILE.read_text(encoding="utf-8"))
 
     retrieval = evaluate_retrieval(index, eval_set, k=args.k)
-    report = {"timestamp": datetime.now(timezone.utc).isoformat(), "retrieval": retrieval}
+    report = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "retriever": args.retriever,
+        "retrieval": retrieval,
+    }
 
     hit_key = f"hit@{args.k}"
     print(
-        f"Retrieval  {hit_key}={retrieval[hit_key]}  MRR={retrieval['mrr']}  "
+        f"Retrieval [{args.retriever}]  {hit_key}={retrieval[hit_key]}  MRR={retrieval['mrr']}  "
         f"({retrieval['n_questions']} questions, "
         f"{retrieval['n_excluded_unanswerable']} hors corpus exclues)"
     )
@@ -207,7 +219,7 @@ def main() -> None:
                 )
 
     RESULTS_DIR.mkdir(exist_ok=True)
-    out = RESULTS_DIR / "evaluation.json"
+    out = RESULTS_DIR / f"evaluation_{args.retriever}.json"
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"Report written to {out}")
 
